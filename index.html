@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Habit Tracker - Build Your Best Self</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        // Configure Tailwind to use class-based dark mode
+        tailwind.config = {
+            darkMode: 'class'
+        }
+    </script>
+    <style>
+        @keyframes confetti {
+            0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(-100px) rotate(360deg); opacity: 0; }
+        }
+        .confetti {
+            animation: confetti 2s ease-out forwards;
+        }
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 5px rgba(34, 197, 94, 0.5); }
+            50% { box-shadow: 0 0 20px rgba(34, 197, 94, 0.8); }
+        }
+        .pulse-glow {
+            animation: pulse-glow 2s infinite;
+        }
+    </style>
+</head>
+<body class="min-h-screen transition-colors duration-300" id="body">
+    <!-- Navigation -->
+    <nav class="bg-white dark:bg-gray-900 shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <h1 class="text-2xl font-bold text-gray-900 dark:text-white">🎯 Habit Tracker</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button id="darkModeToggle" class="p-2 rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition">
+                        <span class="dark:hidden">🌙</span>
+                        <span class="hidden dark:inline">☀️</span>
+                    </button>
+                    <button id="resetBtn" class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition">
+                        Reset All
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Quote of the Day -->
+        <div class="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-6 rounded-xl shadow-lg mb-8">
+            <div class="text-center">
+                <h2 class="text-lg font-semibold mb-2">💭 Quote of the Day</h2>
+                <p id="dailyQuote" class="text-xl italic"></p>
+            </div>
+        </div>
+
+        <!-- User Profile Card -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-8">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">Your Progress</h3>
+                    <div id="userBadge" class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200">
+                        🐣 Noob
+                    </div>
+                </div>
+                <div class="text-right">
+                    <p class="text-sm text-gray-600 dark:text-gray-400">Total Goals</p>
+                    <p id="totalGoals" class="text-2xl font-bold text-gray-900 dark:text-white">0</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex flex-col sm:flex-row gap-4 mb-8">
+            <button id="createGoalBtn" class="flex-1 bg-gradient-to-r from-green-500 to-blue-600 text-white py-3 px-6 rounded-xl font-semibold hover:from-green-600 hover:to-blue-700 transition transform hover:scale-105 shadow-lg">
+                ➕ Create New Goal
+            </button>
+            <button id="hallOfFameBtn" class="flex-1 bg-gradient-to-r from-yellow-500 to-orange-600 text-white py-3 px-6 rounded-xl font-semibold hover:from-yellow-600 hover:to-orange-700 transition transform hover:scale-105 shadow-lg">
+                🏆 Hall of Fame
+            </button>
+        </div>
+
+        <!-- Goals Container -->
+        <div id="goalsContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+            <!-- Goals will be dynamically inserted here -->
+        </div>
+
+        <!-- Empty State -->
+        <div id="emptyState" class="text-center py-12">
+            <div class="text-6xl mb-4">🎯</div>
+            <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">No Goals Yet</h3>
+            <p class="text-gray-600 dark:text-gray-400 mb-6">Start your journey by creating your first goal!</p>
+            <button class="bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition" onclick="document.getElementById('createGoalBtn').click()">
+                Create Your First Goal
+            </button>
+        </div>
+    </div>
+
+    <!-- Create Goal Modal -->
+    <div id="createGoalModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-50">
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 w-full max-w-md">
+            <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4">Create New Goal</h3>
+            <form id="createGoalForm">
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Goal Name</label>
+                    <input type="text" id="goalName" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white" placeholder="e.g., Exercise daily, Read 30 minutes" required>
+                </div>
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Duration (Days)</label>
+                    <input type="number" id="goalDays" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white" placeholder="e.g., 30, 75, 100" min="1" max="365" required>
+                </div>
+                <div class="flex gap-3">
+                    <button type="button" id="cancelGoal" class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+                        Cancel
+                    </button>
+                    <button type="submit" class="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition">
+                        Create Goal
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Hall of Fame Modal -->
+    <div id="hallOfFameModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-50">
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 w-full max-w-2xl max-h-96 overflow-y-auto">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white">🏆 Hall of Fame</h3>
+                <button id="closeHallOfFame" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">✕</button>
+            </div>
+            <div id="hallOfFameContent">
+                <!-- Hall of Fame entries will be inserted here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // In-memory storage (replace with localStorage in your environment)
+        let appData = {
+            goals: [],
+            hallOfFame: [],
+            darkMode: false
+        };
+
+        const quotes = [
+            "The way to get started is to quit talking and begin doing. - Walt Disney",
+            "Don't watch the clock; do what it does. Keep going. - Sam Levenson",
+            "Success is not final, failure is not fatal: it is the courage to continue that counts. - Winston Churchill",
+            "The future depends on what you do today. - Mahatma Gandhi",
+            "You don't have to be great to get started, but you have to get started to be great. - Les Brown",
+            "Success is the sum of small efforts repeated day in and day out. - Robert Collier",
+            "Discipline is the bridge between goals and accomplishment. - Jim Rohn"
+        ];
+
+        const ranks = [
+            { name: "Noob", emoji: "🐣", minDays: 0 },
+            { name: "Rookie", emoji: "🧑‍🎓", minDays: 1 },
+            { name: "Apprentice", emoji: "🛠️", minDays: 4 },
+            { name: "Disciplined", emoji: "🧘", minDays: 8 },
+            { name: "Fighter", emoji: "🥋", minDays: 15 },
+            { name: "Achiever", emoji: "🎯", minDays: 22 },
+            { name: "Resilient", emoji: "🔥", minDays: 31 },
+            { name: "Master", emoji: "🧠", minDays: 46 },
+            { name: "Major", emoji: "🛡️", minDays: 61 },
+            { name: "Supreme", emoji: "👑", minDays: 75 },
+            { name: "Unbreakable", emoji: "💎", minDays: 90 },
+            { name: "Legend", emoji: "🦸", minDays: 120 },
+            { name: "Immortal", emoji: "🐉", minDays: 200 }
+        ];
+
+        // Initialize app
+        function initApp() {
+            loadData();
+            setupEventListeners();
+            displayDailyQuote();
+            renderGoals();
+            updateUserBadge();
+            initializeDarkMode();
+        }
+
+        function loadData() {
+            try {
+                const stored = localStorage.getItem('habitTrackerData');
+                if (stored) {
+                    const parsedData = JSON.parse(stored);
+                    // Merge with default structure to handle any missing properties
+                    appData = {
+                        goals: parsedData.goals || [],
+                        hallOfFame: parsedData.hallOfFame || [],
+                        darkMode: parsedData.darkMode || false
+                    };
+                    console.log('Data loaded from localStorage:', appData);
+                }
+            } catch (error) {
+                console.error('Error loading data from localStorage:', error);
+                // If there's an error, keep the default appData
+            }
+        }
+
+        function saveData() {
+            try {
+                localStorage.setItem('habitTrackerData', JSON.stringify(appData));
+                console.log('Data saved to localStorage:', appData);
+            } catch (error) {
+                console.error('Error saving data to localStorage:', error);
+            }
+        }
+
+        function setupEventListeners() {
+            document.getElementById('createGoalBtn').addEventListener('click', showCreateGoalModal);
+            document.getElementById('cancelGoal').addEventListener('click', hideCreateGoalModal);
+            document.getElementById('createGoalForm').addEventListener('submit', createGoal);
+            document.getElementById('hallOfFameBtn').addEventListener('click', showHallOfFame);
+            document.getElementById('closeHallOfFame').addEventListener('click', hideHallOfFame);
+            document.getElementById('darkModeToggle').addEventListener('click', toggleDarkMode);
+            document.getElementById('resetBtn').addEventListener('click', resetAll);
+        }
+
+        function displayDailyQuote() {
+            const today = new Date().getDate();
+            const quote = quotes[today % quotes.length];
+            document.getElementById('dailyQuote').textContent = quote;
+        }
+
+        function showCreateGoalModal() {
+            document.getElementById('createGoalModal').classList.remove('hidden');
+        }
+
+        function hideCreateGoalModal() {
+            document.getElementById('createGoalModal').classList.add('hidden');
+            document.getElementById('createGoalForm').reset();
+        }
+
+        function createGoal(e) {
+            e.preventDefault();
+            const name = document.getElementById('goalName').value.trim();
+            const days = parseInt(document.getElementById('goalDays').value);
+
+            if (!name || !days) return;
+
+            const goal = {
+                id: Date.now(),
+                name: name,
+                totalDays: days,
+                completedDays: 0,
+                streak: 0,
+                progress: [],
+                createdAt: new Date().toISOString(),
+                lastClickDate: null
+            };
+
+            appData.goals.push(goal);
+            saveData();
+            renderGoals();
+            updateUserBadge();
+            hideCreateGoalModal();
+        }
+
+        function renderGoals() {
+            const container = document.getElementById('goalsContainer');
+            const emptyState = document.getElementById('emptyState');
+            
+            if (appData.goals.length === 0) {
+                container.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                document.getElementById('totalGoals').textContent = '0';
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+            document.getElementById('totalGoals').textContent = appData.goals.length;
+
+            container.innerHTML = appData.goals.map(goal => {
+                const progressPercent = (goal.completedDays / goal.totalDays) * 100;
+                const canClickToday = canClickTodayButton(goal);
+                const isCompleted = goal.completedDays >= goal.totalDays;
+
+                return `
+                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 ${isCompleted ? 'ring-2 ring-green-500' : ''}">
+                        <div class="flex justify-between items-start mb-4">
+                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">${goal.name}</h3>
+                            <button onclick="deleteGoal(${goal.id})" class="text-red-500 hover:text-red-700 text-sm">🗑️</button>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <div class="flex justify-between text-sm text-gray-600 dark:text-gray-400 mb-1">
+                                <span>Progress</span>
+                                <span>${goal.completedDays}/${goal.totalDays} days</span>
+                            </div>
+                            <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                                <div class="bg-gradient-to-r from-green-500 to-blue-500 h-2 rounded-full transition-all duration-500" style="width: ${progressPercent}%"></div>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-between items-center mb-4">
+                            <div class="text-center">
+                                <p class="text-sm text-gray-600 dark:text-gray-400">Streak</p>
+                                <p class="text-xl font-bold text-gray-900 dark:text-white">${goal.streak} 🔥</p>
+                            </div>
+                            <div class="text-center">
+                                <p class="text-sm text-gray-600 dark:text-gray-400">Progress</p>
+                                <p class="text-xl font-bold text-gray-900 dark:text-white">${progressPercent.toFixed(1)}%</p>
+                            </div>
+                        </div>
+
+                        ${isCompleted ? `
+                            <div class="text-center py-4">
+                                <div class="text-4xl mb-2">🎉</div>
+                                <p class="text-green-600 dark:text-green-400 font-bold">Goal Completed!</p>
+                            </div>
+                        ` : `
+                            <button 
+                                onclick="markProgress(${goal.id})" 
+                                class="w-full py-3 px-4 rounded-lg font-semibold transition transform hover:scale-105 ${
+                                    canClickToday 
+                                        ? 'bg-green-500 hover:bg-green-600 text-white pulse-glow' 
+                                        : 'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                                }"
+                                ${!canClickToday ? 'disabled' : ''}
+                            >
+                                ${canClickToday ? 'I Did It Today ✅' : 'Already done today! 🎉'}
+                            </button>
+                        `}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function canClickTodayButton(goal) {
+            if (!goal.lastClickDate) return true;
+            
+            const lastClick = new Date(goal.lastClickDate);
+            const today = new Date();
+            
+            return lastClick.toDateString() !== today.toDateString();
+        }
+
+        function markProgress(goalId) {
+            const goal = appData.goals.find(g => g.id === goalId);
+            if (!goal || !canClickTodayButton(goal)) return;
+
+            const today = new Date().toISOString();
+            goal.lastClickDate = today;
+            goal.completedDays++;
+            goal.streak++;
+            goal.progress.push(today);
+
+            // Check if goal is completed
+            if (goal.completedDays >= goal.totalDays) {
+                addToHallOfFame(goal);
+                showConfetti();
+            }
+
+            saveData();
+            renderGoals();
+            updateUserBadge();
+        }
+
+        function deleteGoal(goalId) {
+            if (confirm('Are you sure you want to delete this goal?')) {
+                appData.goals = appData.goals.filter(g => g.id !== goalId);
+                saveData();
+                renderGoals();
+                updateUserBadge();
+            }
+        }
+
+        function addToHallOfFame(goal) {
+            const rank = getUserRank();
+            const entry = {
+                id: goal.id,
+                name: goal.name,
+                totalDays: goal.totalDays,
+                streak: goal.streak,
+                rank: rank,
+                completedAt: new Date().toISOString()
+            };
+
+            appData.hallOfFame.push(entry);
+            saveData();
+        }
+
+        function getUserRank() {
+            const maxCompletedDays = Math.max(...appData.goals.map(g => g.completedDays), 0);
+            
+            for (let i = ranks.length - 1; i >= 0; i--) {
+                if (maxCompletedDays >= ranks[i].minDays) {
+                    return ranks[i];
+                }
+            }
+            return ranks[0];
+        }
+
+        function updateUserBadge() {
+            const rank = getUserRank();
+            const badgeElement = document.getElementById('userBadge');
+            badgeElement.textContent = `${rank.emoji} ${rank.name}`;
+            badgeElement.className = `inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getRankColor(rank)}`;
+        }
+
+        function getRankColor(rank) {
+            const colors = {
+                'Noob': 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200',
+                'Rookie': 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200',
+                'Apprentice': 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200',
+                'Disciplined': 'bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200',
+                'Fighter': 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200',
+                'Achiever': 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200',
+                'Resilient': 'bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200',
+                'Master': 'bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200',
+                'Major': 'bg-pink-100 dark:bg-pink-900 text-pink-800 dark:text-pink-200',
+                'Supreme': 'bg-yellow-200 dark:bg-yellow-800 text-yellow-900 dark:text-yellow-100',
+                'Unbreakable': 'bg-gray-200 dark:bg-gray-600 text-gray-900 dark:text-gray-100',
+                'Legend': 'bg-purple-200 dark:bg-purple-700 text-purple-900 dark:text-purple-100',
+                'Immortal': 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
+            };
+            return colors[rank.name] || colors['Noob'];
+        }
+
+        function showHallOfFame() {
+            const modal = document.getElementById('hallOfFameModal');
+            const content = document.getElementById('hallOfFameContent');
+            
+            if (appData.hallOfFame.length === 0) {
+                content.innerHTML = `
+                    <div class="text-center py-8">
+                        <div class="text-4xl mb-4">🏆</div>
+                        <p class="text-gray-600 dark:text-gray-400">No completed goals yet!</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-500 mt-2">Complete your first goal to join the Hall of Fame!</p>
+                    </div>
+                `;
+            } else {
+                content.innerHTML = appData.hallOfFame.map(entry => `
+                    <div class="bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900 dark:to-orange-900 p-4 rounded-lg mb-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h4 class="font-bold text-gray-900 dark:text-white">${entry.name}</h4>
+                                <p class="text-sm text-gray-600 dark:text-gray-400">${entry.totalDays} days • ${entry.streak} day streak</p>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-2xl">${entry.rank.emoji}</div>
+                                <p class="text-sm font-medium text-gray-700 dark:text-gray-300">${entry.rank.name}</p>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+            
+            modal.classList.remove('hidden');
+        }
+
+        function hideHallOfFame() {
+            document.getElementById('hallOfFameModal').classList.add('hidden');
+        }
+
+        function showConfetti() {
+            // Create confetti effect
+            for (let i = 0; i < 50; i++) {
+                const confetti = document.createElement('div');
+                confetti.innerHTML = ['🎉', '🎊', '⭐', '🌟', '💫'][Math.floor(Math.random() * 5)];
+                confetti.className = 'fixed text-2xl confetti';
+                confetti.style.left = Math.random() * 100 + 'vw';
+                confetti.style.top = '100vh';
+                confetti.style.zIndex = '1000';
+                document.body.appendChild(confetti);
+                
+                setTimeout(() => {
+                    confetti.remove();
+                }, 2000);
+            }
+        }
+
+        function toggleDarkMode() {
+            console.log('Dark mode toggle clicked'); // Debug log
+            const html = document.documentElement;
+            const isDarkMode = html.classList.contains('dark');
+            
+            console.log('Current dark mode state:', isDarkMode); // Debug log
+            
+            if (isDarkMode) {
+                html.classList.remove('dark');
+                appData.darkMode = false;
+                console.log('Switched to light mode'); // Debug log
+            } else {
+                html.classList.add('dark');
+                appData.darkMode = true;
+                console.log('Switched to dark mode'); // Debug log
+            }
+            
+            saveData();
+        }
+
+        function initializeDarkMode() {
+            // Use the loaded dark mode preference
+            const html = document.documentElement;
+            if (appData.darkMode) {
+                html.classList.add('dark');
+                console.log('Initialized in dark mode');
+            } else {
+                html.classList.remove('dark');
+                console.log('Initialized in light mode');
+            }
+        }
+
+        function resetAll() {
+            if (confirm('Are you sure you want to reset all data? This cannot be undone!')) {
+                const currentDarkMode = appData.darkMode;
+                appData = {
+                    goals: [],
+                    hallOfFame: [],
+                    darkMode: currentDarkMode
+                };
+                saveData();
+                renderGoals();
+                updateUserBadge();
+            }
+        }
+
+        // Initialize the app when the page loads
+        document.addEventListener('DOMContentLoaded', initApp);
+    </script>
+</body>
+</html>
